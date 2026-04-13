@@ -1,0 +1,9 @@
+from django.contrib import admin
+from django.urls import path, include
+from gestion import views1  # pour la page d'accueil
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('api/', include('gestion.urls')),  # toutes les URLs API commencent par /api/
+    path('', views1.home, name='home'),     # page d'accueil
+]

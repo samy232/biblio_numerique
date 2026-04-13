@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow border-0">
+                <div class="card-header bg-warning text-dark py-3">
+                    <h4 class="mb-0 text-center">
+                        <i class="bi bi-pencil-square"></i> Modifier l'Auteur
+                    </h4>
+                </div>
+                
+                <div class="card-body p-4">
+                    <p class="text-muted small mb-4">
+                        Modification de l'auteur ID : <strong>{{ auteur.id }}</strong>
+                    </p>
+
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nom</label>
+                            <input type="text" name="nom" class="form-control" 
+                                   value="{{ auteur.nom }}" placeholder="Ex: Hugo" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Prénom</label>
+                            <input type="text" name="prenom" class="form-control" 
+                                   value="{{ auteur.prenom }}" placeholder="Ex: Victor" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nationalité</label>
+                            <input type="text" name="nationalite" class="form-control" 
+                                   value="{{ auteur.nationalite }}" placeholder="Ex: Française" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Date de naissance</label>
+                            <input type="date" name="date_naissance" class="form-control" 
+                                   value="{{ auteur.date_naissance }}" required>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-warning fw-bold">
+                                Mettre à jour (PUT)
+                            </button>
+                            <a href="{% url 'ui_auteurs' %}" class="btn btn-outline-secondary">
+                                Annuler et retourner
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

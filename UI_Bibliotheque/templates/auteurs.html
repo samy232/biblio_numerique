@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Gestion des Auteurs</h2>
+<a href="{% url 'ui_creer_auteur' %}" class="btn btn-success">Add New Author (POST)</a> </div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Nom</th>
+                    <th>Prénom</th>
+                    <th>Nationalité</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for auteur in auteurs %}
+                <tr>
+                    <td>{{ auteur.id }}</td>
+                    <td>{{ auteur.nom }}</td>
+                    <td>{{ auteur.prenom }}</td>
+                    <td>{{ auteur.nationalite }}</td>
+                    <td>
+                        <a href="{% url 'ui_modifier_auteur' auteur.id %}" class="btn btn-sm btn-warning">Modifier</a>
+                        <a href="{% url 'ui_supprimer_auteur' auteur.id %}"   class="btn btn-sm btn-danger"   onclick="return confirm('Es-tu sûr de vouloir supprimer cet auteur ?')"> Supprimer  </a>                        
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center">Aucun auteur trouvé dans l'API.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

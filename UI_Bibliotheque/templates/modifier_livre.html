@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h4>Modifier le Livre : {{ livre.titre }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Titre</label>
+                        <input type="text" name="titre" class="form-control" value="{{ livre.titre }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">ISBN</label>
+                        <input type="text" name="isbn" class="form-control" value="{{ livre.isbn }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Date de Publication</label>
+                        <input type="date" name="date_publication" class="form-control" value="{{ livre.date_publication }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nombre de pages</label>
+                        <input type="number" name="nombre_pages" class="form-control" value="{{ livre.nombre_pages|default:0 }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Auteur</label>
+                        <select name="auteur" class="form-select" required>
+                            {% for auteur in auteurs %}
+                                <option value="{{ auteur.id }}" {% if auteur.id == livre.auteur %}selected{% endif %}>
+                                    {{ auteur.nom }} {{ auteur.prenom }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-warning fw-bold">Mettre à jour (PUT)</button>
+                        <a href="{% url 'ui_livres' %}" class="btn btn-light">Annuler</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

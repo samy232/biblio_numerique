@@ -1,0 +1,412 @@
+from django.http import JsonResponse, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import get_object_or_404
+from django.views import View
+from django.utils.decorators import method_decorator
+import json
+
+from .models import Auteur, Livre, Emprunt
+
+
+# --- Routes Supplémentaires ---
+
+def livres_par_auteur(request, auteur_id):
+    """Retourne tous les livres d'un auteur spécifique"""
+    # On filtre les livres par l'ID de l'auteur
+    livres = Livre.objects.filter(auteur_id=auteur_id)
+    data = [
+        {
+            'id': l.id,
+            'titre': l.titre,
+            'isbn': l.isbn,
+            'disponible': l.disponible
+        }
+        for l in livres
+    ]
+    return JsonResponse(data, safe=False)
+
+def emprunts_par_utilisateur(request, nom):
+    """Retourne tous les emprunts d'un lecteur par son nom"""
+    # On filtre les emprunts par le nom du lecteur
+    emprunts = Emprunt.objects.filter(nom_lecteur__icontains=nom)
+    data = [
+        {
+            'id': e.id,
+            'livre_titre': e.livre.titre,
+            'date_emprunt': str(e.date_emprunt),
+            'retourne': e.retourne
+        }
+        for e in emprunts
+    ]
+    return JsonResponse(data, safe=False)
+
+
+# ============================================
+# LISTE ET CRÉATION DES EMPRUNTS
+# ============================================
+
+@method_decorator(csrf_exempt, name='dispatch')
+class ListeEmpruntsView(View):
+
+    def get(self, request):
+        """Retourne tous les emprunts"""
+        emprunts = Emprunt.objects.all()
+        data = [
+            {
+                'id': e.id,
+                'nom_lecteur': e.nom_lecteur,
+                'livre_id': e.livre_id,
+                'livre_titre': e.livre.titre,
+                'date_emprunt': str(e.date_emprunt),
+                'date_retour': str(e.date_retour),
+                'retourne': e.retourne
+            }
+            for e in emprunts
+        ]
+        return JsonResponse(data, safe=False)
+
+    def post(self, request):
+        """Crée un nouvel emprunt"""
+        try:
+            data = json.loads(request.body)
+            e = Emprunt.objects.create(
+                nom_lecteur=data.get('nom_lecteur'),
+                livre_id=data.get('livre_id'),
+                date_emprunt=data.get('date_emprunt'),
+                date_retour=data.get('date_retour'),
+                retourne=False
+            )
+            return JsonResponse({'id': e.id, 'message': 'Emprunt créé avec succès'}, status=201)
+        except Exception as exc:
+            return JsonResponse({'erreur': str(exc)}, status=400)
+
+
+# ============================================
+# DETAIL, RETOUR ET SUPPRESSION
+# ============================================
+
+@method_decorator(csrf_exempt, name='dispatch')
+class DetailEmpruntView(View):
+
+    def get(self, request, id):
+        """Détail d’un emprunt"""
+        e = get_object_or_404(Emprunt, id=id)
+        data = {
+            'id': e.id,
+            'nom_lecteur': e.nom_lecteur,
+            'livre_id': e.livre_id,
+            'livre_titre': e.livre.titre,
+            'date_emprunt': str(e.date_emprunt),
+            'date_retour': str(e.date_retour),
+            'retourne': e.retourne
+        }
+        return JsonResponse(data)
+
+    def put(self, request, id):
+        """Marque l’emprunt comme retourné"""
+        e = get_object_or_404(Emprunt, id=id)
+        e.retourne = True
+        e.save()
+        return JsonResponse({'message': 'Emprunt marqué comme retourné'})
+
+    def delete(self, request, id):
+        """Supprime l’emprunt"""
+        e = get_object_or_404(Emprunt, id=id)
+        e.delete()
+        return JsonResponse({'message': 'Emprunt supprimé'}, status=204)
+# ============================================
+# VUES FONCTIONNELLES POUR AUTEUR
+# ============================================
+
+@csrf_exempt
+def liste_auteurs(request):
+    auteurs = Auteur.objects.all()
+    data = [
+        {
+            'id': auteur.id,
+            'nom': auteur.nom,
+            'prenom': auteur.prenom,
+            'date_naissance': auteur.date_naissance,
+            'nationalite': auteur.nationalite
+        }
+        for auteur in auteurs
+    ]
+    return JsonResponse(data, safe=False)
+
+
+@csrf_exempt
+def detail_auteur(request, id):
+    auteur = get_object_or_404(Auteur, id=id)
+    data = {
+        'id': auteur.id,
+        'nom': auteur.nom,
+        'prenom': auteur.prenom,
+        'date_naissance': auteur.date_naissance,
+        'nationalite': auteur.nationalite
+    }
+    return JsonResponse(data)
+
+
+@csrf_exempt
+def creer_auteur(request):
+    if request.method != 'POST':
+        return JsonResponse({'erreur': 'Méthode non autorisée'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+
+        auteur = Auteur.objects.create(
+            nom=data.get('nom'),
+            prenom=data.get('prenom'),
+            date_naissance=data.get('date_naissance'),
+            nationalite=data.get('nationalite', '')
+        )
+
+        return JsonResponse({
+            'id': auteur.id,
+            'message': 'Auteur créé avec succès'
+        }, status=201)
+
+    except Exception as e:
+        return JsonResponse({'erreur': str(e)}, status=400)
+
+
+@csrf_exempt
+def modifier_auteur(request, id):
+    if request.method != 'PUT':
+        return JsonResponse({'erreur': 'Méthode non autorisée'}, status=405)
+
+    auteur = get_object_or_404(Auteur, id=id)
+
+    try:
+        data = json.loads(request.body)
+
+        auteur.nom = data.get('nom', auteur.nom)
+        auteur.prenom = data.get('prenom', auteur.prenom)
+        auteur.date_naissance = data.get('date_naissance', auteur.date_naissance)
+        auteur.nationalite = data.get('nationalite', auteur.nationalite)
+
+        auteur.save()
+
+        return JsonResponse({
+            'message': 'Auteur modifié avec succès'
+        })
+
+    except Exception as e:
+        return JsonResponse({'erreur': str(e)}, status=400)
+
+
+@csrf_exempt
+def supprimer_auteur(request, id):
+    if request.method != 'DELETE':
+        return JsonResponse({'erreur': 'Méthode non autorisée'}, status=405)
+
+    auteur = get_object_or_404(Auteur, id=id)
+    auteur.delete()
+
+    return JsonResponse({
+        'message': 'Auteur supprimé avec succès'
+    }, status=204)
+
+
+# ============================================
+# VUES CLASSES POUR LIVRE
+# ============================================
+
+@method_decorator(csrf_exempt, name='dispatch')
+class ListeLivresView(View):
+
+    def get(self, request):
+        livres = Livre.objects.all()
+
+        data = [
+            {
+                'id': livre.id,
+                'titre': livre.titre,
+                'isbn': livre.isbn,
+                'date_publication': livre.date_publication,
+                'nombre_pages': livre.nombre_pages,
+                'auteur_id': livre.auteur_id,
+                'disponible': livre.disponible
+            }
+            for livre in livres
+        ]
+
+        return JsonResponse(data, safe=False)
+
+    def post(self, request):
+        try:
+            data = json.loads(request.body)
+
+            livre = Livre.objects.create(
+                titre=data.get('titre'),
+                isbn=data.get('isbn'),
+                date_publication=data.get('date_publication'),
+                nombre_pages=data.get('nombre_pages'),
+                auteur_id=data.get('auteur_id'),
+                disponible=data.get('disponible', True)
+            )
+
+            return JsonResponse({
+                'id': livre.id,
+                'message': 'Livre créé avec succès'
+            }, status=201)
+
+        except Exception as e:
+            return JsonResponse({'erreur': str(e)}, status=400)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class DetailLivreView(View):
+
+    def get(self, request, id):
+        livre = get_object_or_404(Livre, id=id)
+
+        data = {
+            'id': livre.id,
+            'titre': livre.titre,
+            'isbn': livre.isbn,
+            'date_publication': livre.date_publication,
+            'nombre_pages': livre.nombre_pages,
+            'auteur_id': livre.auteur_id,
+            'auteur_nom': f"{livre.auteur.prenom} {livre.auteur.nom}",
+            'disponible': livre.disponible
+        }
+
+        return JsonResponse(data)
+
+    def put(self, request, id):
+        livre = get_object_or_404(Livre, id=id)
+
+        try:
+            data = json.loads(request.body)
+
+            livre.titre = data.get('titre', livre.titre)
+            livre.isbn = data.get('isbn', livre.isbn)
+            livre.date_publication = data.get('date_publication', livre.date_publication)
+            livre.nombre_pages = data.get('nombre_pages', livre.nombre_pages)
+            livre.auteur_id = data.get('auteur_id', livre.auteur_id)
+            livre.disponible = data.get('disponible', livre.disponible)
+
+            livre.save()
+
+            return JsonResponse({
+                'message': 'Livre modifié avec succès'
+            })
+
+        except Exception as e:
+            return JsonResponse({'erreur': str(e)}, status=400)
+
+    def delete(self, request, id):
+        livre = get_object_or_404(Livre, id=id)
+        livre.delete()
+
+        return JsonResponse({
+            'message': 'Livre supprimé avec succès'
+        }, status=204)
+
+
+# ============================================
+# VUES FONCTIONNELLES POUR EMPRUNT
+# ============================================
+
+@csrf_exempt
+def liste_emprunts(request):
+    if request.method != 'GET':
+        return JsonResponse({'erreur': 'Méthode non autorisée'}, status=405)
+
+    emprunts = Emprunt.objects.all()
+
+    data = [
+        {
+            'id': emprunt.id,
+            'livre_id': emprunt.livre_id,
+            'livre_titre': emprunt.livre.titre,
+            'date_emprunt': emprunt.date_emprunt,
+            'date_retour': emprunt.date_retour,
+            'retourne': emprunt.retourne
+        }
+        for emprunt in emprunts
+    ]
+
+    return JsonResponse(data, safe=False)
+
+
+@csrf_exempt
+def detail_emprunt(request, id):
+    if request.method != 'GET':
+        return JsonResponse({'erreur': 'Méthode non autorisée'}, status=405)
+
+    emprunt = get_object_or_404(Emprunt, id=id)
+
+    data = {
+        'id': emprunt.id,
+        'livre_id': emprunt.livre_id,
+        'livre_titre': emprunt.livre.titre,
+        'date_emprunt': emprunt.date_emprunt,
+        'date_retour': emprunt.date_retour,
+        'retourne': emprunt.retourne
+    }
+
+    return JsonResponse(data)
+
+
+@csrf_exempt
+def creer_emprunt(request):
+    if request.method != 'POST':
+        return JsonResponse({'erreur': 'Méthode non autorisée'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+
+        emprunt = Emprunt.objects.create(
+            livre_id=data.get('livre_id'),
+            date_emprunt=data.get('date_emprunt'),
+            date_retour=data.get('date_retour'),
+            retourne=False
+        )
+
+        return JsonResponse({
+            'id': emprunt.id,
+            'message': 'Emprunt créé avec succès'
+        }, status=201)
+
+    except Exception as e:
+        return JsonResponse({'erreur': str(e)}, status=400)
+
+
+@csrf_exempt
+def retourner_emprunt(request, id):
+    if request.method != 'PUT':
+        return JsonResponse({'erreur': 'Méthode non autorisée'}, status=405)
+
+    emprunt = get_object_or_404(Emprunt, id=id)
+
+    emprunt.retourne = True
+    emprunt.save()
+
+    return JsonResponse({
+        'message': 'Emprunt retourné avec succès'
+    })
+
+
+@csrf_exempt
+def supprimer_emprunt(request, id):
+    if request.method != 'DELETE':
+        return JsonResponse({'erreur': 'Méthode non autorisée'}, status=405)
+
+    emprunt = get_object_or_404(Emprunt, id=id)
+    emprunt.delete()
+
+    return JsonResponse({
+        'message': 'Emprunt supprimé avec succès'
+    }, status=204)
+
+
+# ============================================
+# PAGE D'ACCUEIL
+# ============================================
+
+def home(request):
+    return HttpResponse("Bienvenue dans la Bibliothèque Numérique !")
+

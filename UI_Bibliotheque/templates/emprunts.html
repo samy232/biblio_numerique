@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-arrow-left-right"></i> Suivi des Emprunts</h2>
+    <a href="{% url 'ui_creer_emprunt' %}" class="btn btn-success">Nouvel Emprunt</a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Livre (ID)</th>
+                    <th>Emprunteur</th>
+                    <th>Date Sortie</th>
+                    <th>Retour Prévu</th>
+                    <th class="text-center">Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for emprunt in emprunts %}
+                <tr>
+                    <td><strong>Livre #{{ emprunt.livre }}</strong></td>
+                    <td>{{ emprunt.utilisateur_nom }}</td>
+                    <td>{{ emprunt.date_emprunt }}</td>
+                    <td>{{ emprunt.date_retour_prevue }}</td>
+                    <td class="text-center">
+                        <a href="{% url 'ui_rendre_livre' emprunt.id %}" class="btn btn-sm btn-outline-danger">Rendre le livre</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">Aucun emprunt en cours.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

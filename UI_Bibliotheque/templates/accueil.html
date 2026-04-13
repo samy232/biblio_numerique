@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="p-5 mb-4 bg-light rounded-3 shadow-sm">
+    <div class="container-fluid py-5 text-center">
+        {% if user.is_authenticated %}
+            <h1 class="display-5 fw-bold">Bienvenue {{ user.username }} !</h1>
+            <p class="col-md-8 fs-4 mx-auto">Heureux de vous revoir dans votre bibliothèque numérique.</p>
+            <a href="{% url 'logout' %}" class="btn btn-danger btn-lg">Déconnexion</a>
+        {% else %}
+            <h1 class="display-5 fw-bold">Bienvenue sur Biblio UMBB</h1>
+            <p class="col-md-8 fs-4 mx-auto">Veuillez vous connecter pour gérer les livres et les auteurs.</p>
+            <a href="{% url 'login' %}" class="btn btn-primary btn-lg">Se connecter</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="text-center text-muted">
+    <p>Nombre de fois que vous avez visité cette page : <strong>{{ visites }}</strong></p>
+</div>
+{% endblock %}
