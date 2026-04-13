@@ -60,9 +60,6 @@ TEMPLATES = [
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [BASE_DIR / 'UI_Bibliotheque' / 'templates'], # Chemin vers tes HTML
         'APP_DIRS': True,
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
-        "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
                 "django.template.context_processors.request",
@@ -123,7 +120,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 # Optionnel : Ajoutez ceci à la fin du fichier pour faciliter les tests Postman
 REST_FRAMEWORK = {
@@ -131,3 +128,5 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.AllowAny',
     ],
 }
+
+STATIC_ROOT = BASE_DIR / "staticfiles"
