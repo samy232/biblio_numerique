@@ -12,17 +12,9 @@ router.register(r'emprunts', api_views.EmpruntViewSet)
 
 # 2. Définition des Patterns d'URL
 urlpatterns = [
-    # --- Interface d'administration Django ---
-    path('admin/', admin.site.urls),
-
     # --- Routes de l'API REST (TP3) ---
     # Accessible via http://127.0.0.1:8000/api/
     path('api/', include(router.urls)), 
-
-    # --- Routes de l'Interface Graphique (TP4) ---
-    # Accessible via http://127.0.0.1:8000/ui/auteurs/
-    path('ui/auteurs/', ui_views.liste_auteurs_ui, name='ui_auteurs'),
-    
     # On ajoutera les autres plus tard (livres, emprunts)
     # path('ui/livres/', ui_views.liste_livres_ui, name='ui_livres'),
     path('ui/auteurs/', ui_views.liste_auteurs_ui, name='ui_auteurs'),
