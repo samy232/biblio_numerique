@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 
 # Get API URL from environment variable (for Render deployment)
-API_BASE_URL = os.environ.get('API_BASE_URL', 'http://localhost:8000')
+API_BASE_URL = os.environ.get('API_BASE_URL', 'https://biblio-numerique-pd59.onrender.com')
 
 API_URL = f'{API_BASE_URL}/api/auteurs/'
 LIVRES_API_URL = f'{API_BASE_URL}/api/livres/'
