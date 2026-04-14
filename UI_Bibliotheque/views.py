@@ -4,8 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 # URL de base de ton API (TP3)
-API_URL = 'https://biblio-numerique-pd59.onrender.com/api/auteurs/'
-
+API_URL = '/api/auteurs/'
 def est_admin(user):
     return user.is_authenticated and user.is_staff
 
@@ -114,7 +113,7 @@ def modifier_auteur_ui(request, id):
         
 
 # URL de base pour les livres
-LIVRES_API_URL = 'https://biblio-numerique-pd59.onrender.com/api/livres/'
+LIVRES_API_URL = '/api/livres/'
 def liste_livres_ui(request):
     # Gestion de la session (Compteur de visites)
     nb_visites = request.session.get('visites', 0) + 1
@@ -214,8 +213,7 @@ def modifier_livre_ui(request, id):
     })
 
 # URL de base pour les emprunts
-EMPRUNTS_API_URL = 'https://biblio-numerique-pd59.onrender.com/api/emprunts/'
-
+EMPRUNTS_API_URL = '/api/emprunts/'
 def liste_emprunts_ui(request):
     """Affiche la liste de tous les emprunts."""
     try:
