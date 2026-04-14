@@ -1,12 +1,17 @@
+import os
 import requests
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-import os 
 
-# URL de base de ton API (TP3)
-API_URL = '/api/auteurs/'
+# Get API URL from environment variable (for Render deployment)
+API_BASE_URL = os.environ.get('API_BASE_URL', 'http://localhost:8000')
+
+API_URL = f'{API_BASE_URL}/api/auteurs/'
+LIVRES_API_URL = f'{API_BASE_URL}/api/livres/'
+EMPRUNTS_API_URL = f'{API_BASE_URL}/api/emprunts/'
+
 def est_admin(user):
     return user.is_authenticated and user.is_staff
 
@@ -14,7 +19,6 @@ def liste_auteurs_ui(request):
     """Affiche la liste des auteurs en récupérant les données de l'API."""
     try:
         response = requests.get(API_URL)
-        # Si l'API répond correctement (200 OK)
         if response.status_code == 200:
             auteurs = response.json()
         else:
@@ -29,12 +33,11 @@ def liste_auteurs_ui(request):
 @login_required(login_url='login')
 def creer_auteur_ui(request):
     """Affiche le formulaire et envoie les données à l'API via POST."""
-# 1. Vérification du rôle
     if not request.user.is_staff:
         messages.error(request, "⚠️ Action interdite : Vous n'avez pas les droits d'administrateur.")
-        return redirect('ui_auteurs') # On le renvoie sur la liste
+        return redirect('ui_auteurs')
+    
     if request.method == 'POST':
-        # 1. On récupère les données saisies dans le formulaire HTML
         data = {
             "nom": request.POST.get('nom'),
             "prenom": request.POST.get('prenom'),
@@ -43,10 +46,9 @@ def creer_auteur_ui(request):
         }
         
         try:
-            # 2. On envoie les données à l'API (DRF)
             response = requests.post(API_URL, json=data)
             
-            if response.status_code == 201: # 201 = Created (succès DRF)
+            if response.status_code == 201:
                 messages.success(request, "Auteur ajouté avec succès !")
                 return redirect('ui_auteurs')
             else:
@@ -54,23 +56,21 @@ def creer_auteur_ui(request):
         except requests.exceptions.ConnectionError:
             messages.error(request, "Erreur de connexion à l'API.")
 
-    # Si c'est un GET, on affiche simplement le formulaire vide
     return render(request, 'creer_auteur.html')
 
 @login_required(login_url='login')
-
 def supprimer_auteur_ui(request, id):
     """Envoie une requête DELETE à l'API pour supprimer l'auteur."""
-    # On construit l'URL spécifique : http://127.0.0.1:8000/api/auteurs/ID/
     if not request.user.is_staff:
         messages.error(request, "⚠️ Action interdite : Vous n'avez pas les droits d'administrateur.")
-        return redirect('ui_auteurs') # On le renvoie sur la liste    
+        return redirect('ui_auteurs')
+    
     url_suppression = f"{API_URL}{id}/"
     
     try:
         response = requests.delete(url_suppression)
         
-        if response.status_code == 204: # 204 No Content = Succès DELETE chez DRF
+        if response.status_code == 204:
             messages.success(request, "Auteur supprimé avec succès.")
         else:
             messages.error(request, f"Erreur lors de la suppression : {response.status_code}")
@@ -80,15 +80,13 @@ def supprimer_auteur_ui(request, id):
     return redirect('ui_auteurs')
 
 @login_required(login_url='login')
-
 def modifier_auteur_ui(request, id):
     if not request.user.is_staff:
         messages.error(request, "⚠️ Action interdite : Vous n'avez pas les droits d'administrateur.")
-        return redirect('ui_auteurs') # On le renvoie sur la liste
+        return redirect('ui_auteurs')
+    
     url_auteur = f"{API_URL}{id}/"
 
-    
-    # 1. On récupère les données actuelles de l'auteur pour remplir le formulaire
     if request.method == 'GET':
         response = requests.get(url_auteur)
         if response.status_code == 200:
@@ -96,7 +94,6 @@ def modifier_auteur_ui(request, id):
             return render(request, 'modifier_auteur.html', {'auteur': auteur})
         return redirect('ui_auteurs')
 
-    # 2. On traite la modification (PUT)
     if request.method == 'POST':
         data = {
             "nom": request.POST.get('nom'),
@@ -112,12 +109,8 @@ def modifier_auteur_ui(request, id):
         else:
             messages.error(request, "Erreur lors de la modification.")
             return redirect('ui_auteurs')
-        
 
-# URL de base pour les livres
-LIVRES_API_URL = '/api/livres/'
 def liste_livres_ui(request):
-    # Gestion de la session (Compteur de visites)
     nb_visites = request.session.get('visites', 0) + 1
     request.session['visites'] = nb_visites
 
@@ -129,26 +122,25 @@ def liste_livres_ui(request):
         
     return render(request, 'livres.html', {
         'livres': livres,
-        'visites': nb_visites # On envoie le compteur au template
+        'visites': nb_visites
     })
-@login_required(login_url='login')
 
+@login_required(login_url='login')
 def supprimer_livre_ui(request, id):
     if not request.user.is_staff:
         messages.error(request, "⚠️ Action interdite : Vous n'avez pas les droits d'administrateur.")
-        return redirect('ui_livres') # On le renvoie sur la liste
-    """Supprime un livre via l'API."""
+        return redirect('ui_livres')
+    
     requests.delete(f"{LIVRES_API_URL}{id}/")
-    return redirect('ui_livres')        
-@login_required(login_url='login')
+    return redirect('ui_livres')
 
+@login_required(login_url='login')
 def creer_livre_ui(request):
     if not request.user.is_staff:
         messages.error(request, "⚠️ Action interdite : Vous n'avez pas les droits d'administrateur.")
         return redirect('ui_livres')
     
     if request.method == 'POST':
-        # On s'assure que 'auteur' et 'nombre_pages' sont des entiers
         try:
             id_auteur = int(request.POST.get('auteur'))
             pages = int(request.POST.get('nombre_pages', 0))
@@ -160,8 +152,8 @@ def creer_livre_ui(request):
             "titre": request.POST.get('titre'),
             "isbn": request.POST.get('isbn'),
             "date_publication": request.POST.get('date_publication'),
-            "auteur": id_auteur,  # Envoi en tant qu'entier
-            "nombre_pages": pages, # Envoi en tant qu'entier
+            "auteur": id_auteur,
+            "nombre_pages": pages,
             "disponible": True
         }
         
@@ -171,34 +163,33 @@ def creer_livre_ui(request):
             messages.success(request, "Livre ajouté avec succès !")
             return redirect('ui_livres')
         else:
-            # Très important pour le débug : affiche l'erreur dans l'UI
             messages.error(request, f"Erreur API : {response.text}")
             print(f"ERREUR API (POST): {response.text}")
 
-    # Récupération des auteurs pour le formulaire
     try:
-        aut_resp = requests.get('http://127.0.0.1:8000/api/auteurs/')
+        aut_resp = requests.get(f'{API_BASE_URL}/api/auteurs/')
         auteurs = aut_resp.json() if aut_resp.status_code == 200 else []
     except Exception as e:
         auteurs = []
         messages.error(request, "Impossible de charger la liste des auteurs.")
     
     return render(request, 'creer_livre.html', {'auteurs': auteurs})
-@login_required(login_url='login')
 
+@login_required(login_url='login')
 def modifier_livre_ui(request, id):
     if not request.user.is_staff:
         messages.error(request, "⚠️ Action interdite : Vous n'avez pas les droits d'administrateur.")
-        return redirect('ui_livres') # On le renvoie sur la liste
+        return redirect('ui_livres')
     
     url_livre = f"{LIVRES_API_URL}{id}/"
+    
     if request.method == 'POST':
         data = {
             "titre": request.POST.get('titre'),
             "isbn": request.POST.get('isbn'),
             "date_publication": request.POST.get('date_publication'),
             "auteur": request.POST.get('auteur'),
-            "nombre_pages": request.POST.get('nombre_pages', 0), # Ajout par défaut
+            "nombre_pages": request.POST.get('nombre_pages', 0),
             "disponible": True
         }
         response = requests.put(url_livre, json=data)
@@ -208,14 +199,12 @@ def modifier_livre_ui(request, id):
             print(f"ERREUR API (PUT): {response.text}")
 
     resp_livre = requests.get(url_livre)
-    resp_auteurs = requests.get('http://127.0.0.1:8000/api/auteurs/')
+    resp_auteurs = requests.get(f'{API_BASE_URL}/api/auteurs/')
     return render(request, 'modifier_livre.html', {
         'livre': resp_livre.json(),
         'auteurs': resp_auteurs.json()
     })
 
-# URL de base pour les emprunts
-EMPRUNTS_API_URL = '/api/emprunts/'
 def liste_emprunts_ui(request):
     """Affiche la liste de tous les emprunts."""
     try:
@@ -226,20 +215,17 @@ def liste_emprunts_ui(request):
     return render(request, 'emprunts.html', {'emprunts': emprunts})
 
 @login_required(login_url='login')
-
 def creer_emprunt_ui(request):
-
     if not request.user.is_staff:
         messages.error(request, "⚠️ Action interdite : Vous n'avez pas les droits d'administrateur.")
-        return redirect('ui_emprunts') # On le renvoie sur la liste
+        return redirect('ui_emprunts')
     
     if request.method == 'POST':
-        # On adapte les clés aux attentes de l'API (nom_lecteur et date_retour)
         data = {
             "livre": request.POST.get('livre'),
-            "nom_lecteur": request.POST.get('nom_lecteur'), # Changé ici
+            "nom_lecteur": request.POST.get('nom_lecteur'),
             "date_emprunt": request.POST.get('date_emprunt'),
-            "date_retour": request.POST.get('date_retour'), # Changé ici
+            "date_retour": request.POST.get('date_retour'),
         }
         
         response = requests.post(EMPRUNTS_API_URL, json=data)
@@ -251,7 +237,6 @@ def creer_emprunt_ui(request):
             print(f"ERREUR API: {response.text}")
             messages.error(request, f"Erreur : {response.text}")
 
-    # Le reste reste identique...
     try:
         resp_livres = requests.get(LIVRES_API_URL)
         livres = resp_livres.json() if resp_livres.status_code == 200 else []
@@ -261,20 +246,15 @@ def creer_emprunt_ui(request):
     return render(request, 'creer_emprunt.html', {'livres': livres})
 
 @login_required(login_url='login')
-
 def rendre_livre_ui(request, id):
-
     if not request.user.is_staff:
         messages.error(request, "⚠️ Action interdite : Vous n'avez pas les droits d'administrateur.")
-        return redirect('ui_emprunts') # On le renvoie sur la liste
+        return redirect('ui_emprunts')
     
-    """Marque un emprunt comme terminé (DELETE ou PUT selon ton API)."""
-    # Si ton API supprime l'emprunt quand le livre est rendu :
     requests.delete(f"{EMPRUNTS_API_URL}{id}/")
     return redirect('ui_emprunts')
 
 def accueil(request):
-    # Point 4 : Gestion de session
     nb_visites = request.session.get('visites', 0) + 1
     request.session['visites'] = nb_visites
     return render(request, 'accueil.html', {'visites': nb_visites})
