@@ -3,6 +3,8 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+import os 
+
 # URL de base de ton API (TP3)
 API_URL = '/api/auteurs/'
 def est_admin(user):
